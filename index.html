@@ -1,0 +1,279 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width,initial-scale=1, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+		<title>使用html5创建一个标准的移动开发web页面</title>
+		<link rel="stylesheet" href="css/style.css"/>
+		<link rel="stylesheet" media="screen and(max-device-width:1080px)" href="css/small.css" />
+		<link rel="stylesheet" href="http://js.arcgis.com/3.10/js/esri/css/esri.css"/>
+		<script type="text/javascript" src="js/jquery-1.9.0.js"></script>
+		<script type="text/javascript">
+			function getLocation() {
+				if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(showPosition, showError);
+				} else {
+					alert("Geolocation is not supported by this browser.");
+				}
+			}
+
+			function showPosition(position) {
+				var latitude = position.coords.latitude;
+				var longitude = position.coords.longitude;
+				var accuracy = position.coords.accuracy;
+				alert("latitude:" + latitude + "<br/>longitude:" + longitude + "<br/>accuracy:" + accuracy);
+			}
+
+			function showError(error) {
+				switch(error.code) {
+				case error.PERMISSION_DENIED:
+					alert("User denied the request for Geolocation.");
+					break;
+				case error.POSITION_UNAVAILABLE:
+					alert("Location information is unavailable.");
+					break;
+				case error.TIMEOUT:
+					alert("The request to get user location timed out.");
+					break;
+				case error.UNKNOWN_ERROR:
+					alert("An unknown error occurred.");
+					break;
+				}
+			}
+
+			// getLocation();
+
+			function showContent(type) {
+				$(".formContem").show();
+				switch(type) {
+				case 'near':
+					$(".formContem").attr('src', 'near.html');
+					break;
+				case 'road':
+					$(".formContem").attr('src', '');
+					break;
+				case 'nav':
+					$(".formContem").attr('src', '');
+					break;
+				case 'mine':
+					$(".formContem").attr('src', '');
+					break;
+				default:
+					$(".formContem").hide();
+					break;
+				}
+			}
+		</script>
+	</head>
+	<body>
+		<script type="text/javascript" src="http://js.arcgis.com/3.10/"></script>
+		<script type="text/javascript" src="js/layer.tianditu.js"></script>
+		<script type="text/javascript">
+			var myMap, findTask, findParameters, graphicsLayer, basemap, annolayer, geometryService;
+			require(["esri/map", "esri/symbols/SimpleFillSymbol", "esri/graphic", "esri/Color", "esri/SpatialReference", "esri/geometry/Extent", "esri/layers/ArcGISTiledMapServiceLayer", "esri/tasks/FindTask", "esri/tasks/FindParameters", "esri/layers/GraphicsLayer", "esri/layers/FeatureLayer", "esri/InfoTemplate", "esri/tasks/GeometryService", "esri/geometry/Point", "esri/tasks/BufferParameters", "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "dojo/domReady!"], function(Map, SimpleFillSymbol, Graphic, Color, SpatialReference, Extent, ArcGISTiledMapServiceLayer, FindTask, FindParameters, GraphicsLayer, FeatureLayer, InfoTemplate, GeometryService, Point, BufferParameters, SimpleMarkerSymbol, SimpleLineSymbol) {
+				var extent = new Extent({
+					"xmin" : 13730000,
+					"ymin" : 5041000,
+					"xmax" : 13834000,
+					"ymax" : 5075000,
+					"spatialReference" : {
+						"wkid" : 102100
+					}
+				});
+				myMap = new esri.Map("map", {
+					extent : extent,
+					zoom : 11,
+					logo : false
+					/*sliderPosition: "bottom-right",
+					 sliderStyle: "small",
+					 sliderLabels: false*/
+
+				});
+
+				// var basemap = new ArcGISTiledMapServiceLayer("http://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineStreetColor/MapServer");
+				// myMap.addLayer(basemap);
+
+				basemap = new TianDiTuLayer(TianDiTuLayer.VEC_BASE_WEBMERCATOR);
+				myMap.addLayer(basemap);
+				annolayer = new TianDiTuLayer(TianDiTuLayer.VEC_ANNO_WEBMERCATOR);
+				myMap.addLayer(annolayer);
+
+				graphicsLayer = new GraphicsLayer();
+				myMap.addLayer(graphicsLayer);
+
+				// var infoTemplate = new InfoTemplate("${点位名称}","${*}");
+				// var featureLayer = new esri.layers.FeatureLayer("http://10.0.5.36:6080/arcgis/rest/services/bxmap/MapServer/0", {
+				// mode: FeatureLayer.MODE_SNAPSHOT,
+				// outFields: ["*"],
+				// });
+				// featureLayer.setInfoTemplate(infoTemplate);
+				// myMap.addLayer(featureLayer);
+
+				var featureLayer2 = new FeatureLayer("http://10.0.5.36:6080/arcgis/rest/services/bxmap/MapServer/63", {
+					mode : FeatureLayer.MODE_SNAPSHOT,
+					outFields : ["*"]
+				});
+				myMap.addLayer(featureLayer2);
+
+				// findTask = new esri.tasks.FindTask("http://10.0.5.36:6080/arcgis/rest/services/bxmap/MapServer");
+				// findParameters = new esri.tasks.FindParameters();
+				// findParameters.layerIds = [0];
+				// findParameters.returnGeometry = true;
+				
+				// geometryService = new esri.tasks.GeometryService("http://10.0.5.36:6080/arcgis/rest/services/Utilities/Geometry/GeometryServer");
+				geometryService = new esri.tasks.GeometryService("http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer");
+				// doBuffer();
+				function doBuffer() {
+					// var mapPoint = new esri.geometry.Point(123.809, 41.252, new esri.SpatialReference({
+					// wkid : 4326
+					// }));
+					var mapPoint = new esri.geometry.Point(13734419.38138071, 5060505.616324839, new esri.SpatialReference({
+						wkid : 102100
+					}));
+					var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 20, new SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID, new dojo.Color([255, 0, 0]), 1), new dojo.Color([0, 255, 0, 0.25]));
+					var graphic = new Graphic(mapPoint, symbol);
+					myMap.graphics.add(graphic);
+					myMap.centerAndZoom(mapPoint, 11);
+
+					var params = new esri.tasks.BufferParameters();
+
+					//buffer的范围值，从输入框中获取
+					params.distances = [20000];
+					//空间参考
+					params.bufferSpatialReference = new esri.SpatialReference({
+						wkid : 102100
+					});
+
+					//输出结果的空间参考
+					params.outSpatialReference = myMap.spatialReference;
+					params.features = graphics;
+					//buffer的单位，从列表框获取
+					params.unit = esri.tasks.GeometryService.UNIT_METER;
+					params.geometries = [mapPoint];
+					//buffer操作
+					geometryService.buffer(params, showBuffer);
+
+					var params = new esri.tasks.BufferParameters();
+					params.distances = [20000];
+					params.bufferSpatialReference = new esri.SpatialReference({
+						wkid : 102100
+					});
+					params.outSpatialReference = new SpatialReference({
+						wikd : 102100
+					});
+					params.unit = esri.tasks.GeometryService.UNIT_METER;
+					params.features = graphic;
+					params.geometries = [mapPoint];
+					geometryService.buffer(params, showBuffer);
+				}
+
+				function showBuffer(features) {
+					var symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, new Color([255, 0, 0, 0.65]), 2), new Color([255, 0, 0, 0.35]));
+
+					for (var j = 0; j < features.length; j++) {
+						var graphic = new esri.Graphic(features[j].geometry, symbol);
+						myMap.graphics.add(graphic);
+					}
+				}
+
+			});
+			function search() {
+				findParameters.searchText = $("#search").val();
+				findTask.execute(findParameters, showResults);
+			}
+
+			function showResults(results) {
+				require(["esri/symbols/SimpleFillSymbol", "esri/symbols/SimpleMarkerSymbol", "esri/symbols/SimpleLineSymbol", "esri/symbols/PictureMarkerSymbol", "esri/InfoTemplate", "dojo/domReady!"], function(SimpleFillSymbol, SimpleMarkerSymbol, SimpleLineSymbol, PictureMarkerSymbol, InfoTemplate) {
+					console.log(results);
+					myMap.centerAndZoom(results[0].feature.geometry, 15);
+					// myMap.graphics.clear();
+					// for(var i=0,n=results.length;i<n;i++){
+					// var graphic = results[i].feature;
+					// var symbol;
+					// switch (graphic.geometry.type) {
+					// case "point":
+					// symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 20, new SimpleLineSymbol(esri.symbol.SimpleLineSymbol.STYLE_SOLID, new dojo.Color([255, 0, 0]), 1), new dojo.Color([0, 255, 0, 0.25]));
+					// break;
+					// case "polyline":
+					// symbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASH, new dojo.Color([255, 0, 0]), 1);
+					// break;
+					// case "polygon":
+					// symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_NONE, new SimpleLineSymbol(SimpleLineSymbol.STYLE_DASHDOT, new dojo.Color([255, 0, 0]), 2), new dojo.Color([255, 255, 0, 0.25]));
+					// break;
+					// }
+					// graphic.setSymbol(symbol);
+					// var infoTemplate = new InfoTemplate("${vehiCODE}","${*}");
+					// graphic.setInfoTemplate(infoTemplate);
+					// myMap.graphics.add(graphic);
+					// myMap.centerAndZoom(graphic.geometry,15);
+					// }
+				});
+			}
+
+			function mapTypeSwitch(type) {
+				require(["esri/layers/ArcGISTiledMapServiceLayer"], function(ArcGISTiledMapServiceLayer) {
+					myMap.removeLayer(basemap);
+					myMap.removeLayer(annolayer);
+					if (type == 0) {
+						basemap = new TianDiTuLayer(TianDiTuLayer.VEC_BASE_WEBMERCATOR);
+						myMap.addLayer(basemap);
+						annolayer = new TianDiTuLayer(TianDiTuLayer.VEC_ANNO_WEBMERCATOR);
+						myMap.addLayer(annolayer);
+					} else if (type == 1){
+						basemap = new TianDiTuLayer(TianDiTuLayer.IMG_BASE_WEBMERCATOR);
+						myMap.addLayer(basemap);
+						annolayer = new TianDiTuLayer(TianDiTuLayer.IMG_ANNO_WEBMERCATOR);
+						myMap.addLayer(annolayer);
+					}else{
+						basemap = new ArcGISTiledMapServiceLayer("http://www.arcgisonline.cn/ArcGIS/rest/services/ChinaOnlineCommunity/MapServer");
+						myMap.addLayer(basemap);
+					}
+				});
+			}
+
+
+			$(window).on("keydown", function(event) {
+				if ($("#search").is(":focus")) {
+					switch(event.keyCode) {
+					// 不同的按键可以做不同的事情
+					// 不同的浏览器的keycode不同
+					// 更多详细信息:     http://unixpapa.com/js/key.html
+					case 13:
+						//回车
+						search();
+						break;
+					default:
+						break;
+					}
+				} else {
+					console.log('not focus');
+				}
+			});
+		</script>
+		<input id="search" class="search" type="search" placeholder="search"/>
+		<div id="map">
+
+		</div>
+		<div class="mapType">
+			<a title="切换矢量图" href="##" onclick="mapTypeSwitch(0)"><img src="img/地图.png"/></a>
+			<a title="切换影像图" href="##" onclick="mapTypeSwitch(1)"><img src="img/影像.png"/></a>
+		</div>
+		<dl class="nav">
+			<dd>
+				<a title="附近" href="##" onclick="showContent('near')"><img src="img/5.png"/><span>附近</span></a>
+			</dd>
+			<dd>
+				<a title="路线" href="##" onclick="showContent('road')"><img src="img/4.png"/><span>路线</span></a>
+			</dd>
+			<dd>
+				<a title="导航" href="##" onclick="showContent('nav')"><img src="img/0.png"/><span>导航</span></a>
+			</dd>
+			<dd>
+				<a title="我的" href="##" onclick="showContent('mine')"><img src="img/1.png"/><span>我的</span></a>
+			</dd>
+		</dl>
+		<iframe class="formContem" frameborder="0" src="">
+
+		</iframe>
+	</body>
+</html>
